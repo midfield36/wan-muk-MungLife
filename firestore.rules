@@ -1,0 +1,197 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Global deny catch-all
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Helper functions
+    function isValidId(id) {
+      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function isAdmin() {
+      return isSignedIn() && request.auth.token.email == 'midfield36@gmail.com';
+    }
+
+    // 1. Users Collection
+    match /users/{userId} {
+      allow get: if isOwner(userId) || isAdmin();
+      allow list: if isAdmin();
+      allow create: if isOwner(userId)
+        && incoming().uid == request.auth.uid
+        && incoming().displayName is string && incoming().displayName.size() <= 64
+        && incoming().termsAgreed == true
+        && incoming().privacyAgreed == true
+        && (incoming().role == 'user' || (isAdmin() && incoming().role == 'admin'));
+      allow update: if isOwner(userId)
+        && incoming().uid == existing().uid
+        && incoming().displayName is string && incoming().displayName.size() <= 64
+        && incoming().diff(existing()).affectedKeys().hasOnly(['displayName', 'photoURL', 'updatedAt'])
+        || isAdmin();
+      allow delete: if isOwner(userId) || isAdmin();
+    }
+
+    // 2. Dogs Collection
+    match /dogs/{dogId} {
+      allow get: if isSignedIn() && (existing().ownerId == request.auth.uid || isAdmin());
+      allow list: if isSignedIn() && (resource.data.ownerId == request.auth.uid || isAdmin());
+      allow create: if isSignedIn()
+        && incoming().ownerId == request.auth.uid
+        && incoming().name is string && incoming().name.size() > 0 && incoming().name.size() <= 64
+        && incoming().breed is string && incoming().breed.size() <= 64;
+      allow update: if isSignedIn()
+        && (existing().ownerId == request.auth.uid || isAdmin())
+        && incoming().ownerId == existing().ownerId
+        && incoming().diff(existing()).affectedKeys().hasOnly(['name', 'breed', 'gender', 'birthDate', 'weight', 'neutered', 'allergies', 'notes', 'photoUrl', 'familyIds', 'updatedAt']);
+      allow delete: if isSignedIn() && (existing().ownerId == request.auth.uid || isAdmin());
+    }
+
+    // 3. Health Records
+    match /healthRecords/{recordId} {
+      allow get: if isSignedIn() && (existing().ownerId == request.auth.uid || isAdmin());
+      allow list: if isSignedIn() && (resource.data.ownerId == request.auth.uid || isAdmin());
+      allow create: if isSignedIn()
+        && incoming().ownerId == request.auth.uid
+        && incoming().dogId is string && incoming().dogId.size() <= 128
+        && incoming().title is string && incoming().title.size() <= 128;
+      allow update: if isSignedIn()
+        && (existing().ownerId == request.auth.uid || isAdmin())
+        && incoming().ownerId == existing().ownerId
+        && incoming().dogId == existing().dogId
+        && incoming().diff(existing()).affectedKeys().hasOnly(['title', 'type', 'date', 'hospitalName', 'cost', 'nextDueDate', 'weightKg', 'notes', 'photoUrl', 'updatedAt']);
+      allow delete: if isSignedIn() && (existing().ownerId == request.auth.uid || isAdmin());
+    }
+
+    // 4. Walks
+    match /walks/{walkId} {
+      allow get: if isSignedIn() && (existing().ownerId == request.auth.uid || isAdmin());
+      allow list: if isSignedIn() && (resource.data.ownerId == request.auth.uid || isAdmin());
+      allow create: if isSignedIn()
+        && incoming().ownerId == request.auth.uid
+        && incoming().dogId is string
+        && incoming().durationMinutes is number
+        && incoming().distanceMeters is number;
+      allow update: if isSignedIn()
+        && (existing().ownerId == request.auth.uid || isAdmin())
+        && incoming().ownerId == existing().ownerId
+        && incoming().diff(existing()).affectedKeys().hasOnly(['memo', 'photoUrl', 'updatedAt']);
+      allow delete: if isSignedIn() && (existing().ownerId == request.auth.uid || isAdmin());
+    }
+
+    // 5. Missing Dogs
+    match /missingDogs/{missingDogId} {
+      allow read: if true;
+      allow create: if isSignedIn()
+        && incoming().ownerId == request.auth.uid
+        && incoming().dogName is string && incoming().dogName.size() <= 64
+        && incoming().status in ['searching', 'found'];
+      allow update: if isSignedIn()
+        && (existing().ownerId == request.auth.uid || isAdmin())
+        && incoming().ownerId == existing().ownerId
+        && incoming().diff(existing()).affectedKeys().hasOnly(['status', 'characteristics', 'contactChannel', 'photoUrl', 'updatedAt']);
+      allow delete: if isSignedIn() && (existing().ownerId == request.auth.uid || isAdmin());
+    }
+
+    // 6. Missing Dog Sighting Reports
+    match /missingDogReports/{reportId} {
+      allow read: if isSignedIn();
+      allow create: if isSignedIn()
+        && incoming().reporterId == request.auth.uid
+        && incoming().missingDogId is string
+        && incoming().description is string && incoming().description.size() <= 1000;
+      allow update, delete: if isAdmin();
+    }
+
+    // 7. Community Posts
+    match /communityPosts/{postId} {
+      allow read: if true;
+      allow create: if isSignedIn()
+        && incoming().authorId == request.auth.uid
+        && incoming().title is string && incoming().title.size() <= 128
+        && incoming().content is string && incoming().content.size() <= 5000;
+      allow update: if (isSignedIn() && existing().authorId == request.auth.uid
+        && incoming().authorId == existing().authorId
+        && incoming().diff(existing()).affectedKeys().hasOnly(['title', 'content', 'category', 'photoUrl', 'likesCount', 'commentsCount', 'updatedAt']))
+        || (isSignedIn() && incoming().diff(existing()).affectedKeys().hasOnly(['likesCount', 'commentsCount']))
+        || isAdmin();
+      allow delete: if (isSignedIn() && existing().authorId == request.auth.uid) || isAdmin();
+    }
+
+    // 8. Post Comments
+    match /comments/{commentId} {
+      allow read: if true;
+      allow create: if isSignedIn()
+        && incoming().authorId == request.auth.uid
+        && incoming().postId is string
+        && incoming().content is string && incoming().content.size() <= 1000;
+      allow update: if (isSignedIn() && existing().authorId == request.auth.uid
+        && incoming().authorId == existing().authorId
+        && incoming().diff(existing()).affectedKeys().hasOnly(['content', 'updatedAt']))
+        || isAdmin();
+      allow delete: if (isSignedIn() && existing().authorId == request.auth.uid) || isAdmin();
+    }
+
+    // 9. Places
+    match /places/{placeId} {
+      allow read: if true;
+      allow create, update, delete: if isAdmin();
+    }
+
+    // 10. Place Reviews
+    match /reviews/{reviewId} {
+      allow read: if true;
+      allow create: if isSignedIn()
+        && incoming().userId == request.auth.uid
+        && incoming().placeId is string
+        && incoming().rating is number
+        && incoming().content is string && incoming().content.size() <= 1500;
+      allow update: if (isSignedIn() && existing().userId == request.auth.uid
+        && incoming().userId == existing().userId
+        && incoming().diff(existing()).affectedKeys().hasOnly(['rating', 'content', 'photoUrl', 'updatedAt']))
+        || isAdmin();
+      allow delete: if (isSignedIn() && existing().userId == request.auth.uid) || isAdmin();
+    }
+
+    // 11. Travel Checklists
+    match /travelChecklists/{checklistId} {
+      allow get: if isSignedIn() && (existing().userId == request.auth.uid || isAdmin());
+      allow list: if isSignedIn() && (resource.data.userId == request.auth.uid || isAdmin());
+      allow create: if isSignedIn()
+        && incoming().userId == request.auth.uid
+        && incoming().title is string && incoming().title.size() <= 128;
+      allow update: if isSignedIn()
+        && (existing().userId == request.auth.uid || isAdmin())
+        && incoming().userId == existing().userId
+        && incoming().diff(existing()).affectedKeys().hasOnly(['title', 'destination', 'items', 'updatedAt']);
+      allow delete: if isSignedIn() && (existing().userId == request.auth.uid || isAdmin());
+    }
+
+    // 12. Abuse Reports
+    match /reports/{reportId} {
+      allow read: if isAdmin();
+      allow create: if isSignedIn()
+        && incoming().reporterId == request.auth.uid
+        && incoming().reason is string && incoming().reason.size() <= 500;
+      allow update, delete: if isAdmin();
+    }
+  }
+}

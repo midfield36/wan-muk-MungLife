@@ -1,0 +1,277 @@
+{
+  "entities": {
+    "UserProfile": {
+      "title": "UserProfile",
+      "description": "User account and profile data",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string", "maxLength": 128 },
+        "email": { "type": "string", "maxLength": 256 },
+        "displayName": { "type": "string", "maxLength": 64 },
+        "photoURL": { "type": "string", "maxLength": 1024 },
+        "termsAgreed": { "type": "boolean" },
+        "termsAgreedAt": { "type": "string", "maxLength": 64 },
+        "privacyAgreed": { "type": "boolean" },
+        "role": { "type": "string", "enum": ["user", "admin"] },
+        "createdAt": { "type": "string", "maxLength": 64 }
+      },
+      "required": ["uid", "displayName", "termsAgreed", "privacyAgreed"]
+    },
+    "Dog": {
+      "title": "Dog",
+      "description": "Dog profile",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "ownerId": { "type": "string", "maxLength": 128 },
+        "familyIds": { "type": "array" },
+        "name": { "type": "string", "maxLength": 64 },
+        "breed": { "type": "string", "maxLength": 64 },
+        "gender": { "type": "string", "enum": ["male", "female", "neutered_male", "spayed_female"] },
+        "birthDate": { "type": "string", "maxLength": 32 },
+        "weight": { "type": "number" },
+        "neutered": { "type": "boolean" },
+        "allergies": { "type": "string", "maxLength": 500 },
+        "notes": { "type": "string", "maxLength": 1000 },
+        "photoUrl": { "type": "string", "maxLength": 2048 },
+        "createdAt": { "type": "string", "maxLength": 64 },
+        "updatedAt": { "type": "string", "maxLength": 64 }
+      },
+      "required": ["ownerId", "name", "breed", "gender"]
+    },
+    "HealthRecord": {
+      "title": "HealthRecord",
+      "description": "Medical and health journal entry for a dog",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "dogId": { "type": "string", "maxLength": 128 },
+        "ownerId": { "type": "string", "maxLength": 128 },
+        "type": { "type": "string", "enum": ["vaccine", "hospital", "exam", "weight", "medicine", "allergy"] },
+        "title": { "type": "string", "maxLength": 128 },
+        "date": { "type": "string", "maxLength": 32 },
+        "hospitalName": { "type": "string", "maxLength": 128 },
+        "cost": { "type": "number" },
+        "nextDueDate": { "type": "string", "maxLength": 32 },
+        "weightKg": { "type": "number" },
+        "notes": { "type": "string", "maxLength": 2000 },
+        "photoUrl": { "type": "string", "maxLength": 2048 },
+        "createdAt": { "type": "string", "maxLength": 64 }
+      },
+      "required": ["dogId", "ownerId", "type", "title", "date"]
+    },
+    "WalkRecord": {
+      "title": "WalkRecord",
+      "description": "Dog walk session log",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "dogId": { "type": "string", "maxLength": 128 },
+        "dogName": { "type": "string", "maxLength": 64 },
+        "ownerId": { "type": "string", "maxLength": 128 },
+        "startTime": { "type": "string", "maxLength": 64 },
+        "endTime": { "type": "string", "maxLength": 64 },
+        "durationMinutes": { "type": "number" },
+        "distanceMeters": { "type": "number" },
+        "memo": { "type": "string", "maxLength": 1000 },
+        "photoUrl": { "type": "string", "maxLength": 2048 },
+        "createdAt": { "type": "string", "maxLength": 64 }
+      },
+      "required": ["ownerId", "dogId", "startTime", "durationMinutes", "distanceMeters"]
+    },
+    "MissingDog": {
+      "title": "MissingDog",
+      "description": "Missing dog alert report",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "ownerId": { "type": "string", "maxLength": 128 },
+        "dogName": { "type": "string", "maxLength": 64 },
+        "breed": { "type": "string", "maxLength": 64 },
+        "gender": { "type": "string", "maxLength": 32 },
+        "size": { "type": "string", "maxLength": 32 },
+        "color": { "type": "string", "maxLength": 64 },
+        "characteristics": { "type": "string", "maxLength": 1000 },
+        "missingDate": { "type": "string", "maxLength": 64 },
+        "missingCity": { "type": "string", "maxLength": 64 },
+        "missingDistrict": { "type": "string", "maxLength": 64 },
+        "missingAddress": { "type": "string", "maxLength": 256 },
+        "contactName": { "type": "string", "maxLength": 64 },
+        "contactChannel": { "type": "string", "maxLength": 128 },
+        "photoUrl": { "type": "string", "maxLength": 2048 },
+        "status": { "type": "string", "enum": ["searching", "found"] },
+        "createdAt": { "type": "string", "maxLength": 64 }
+      },
+      "required": ["ownerId", "dogName", "breed", "missingDate", "missingCity", "status"]
+    },
+    "MissingDogReport": {
+      "title": "MissingDogReport",
+      "description": "Sighting report for a missing dog",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "missingDogId": { "type": "string", "maxLength": 128 },
+        "reporterId": { "type": "string", "maxLength": 128 },
+        "spottedDate": { "type": "string", "maxLength": 64 },
+        "spottedLocation": { "type": "string", "maxLength": 256 },
+        "description": { "type": "string", "maxLength": 1000 },
+        "photoUrl": { "type": "string", "maxLength": 2048 },
+        "createdAt": { "type": "string", "maxLength": 64 }
+      },
+      "required": ["missingDogId", "reporterId", "spottedDate", "spottedLocation", "description"]
+    },
+    "CommunityPost": {
+      "title": "CommunityPost",
+      "description": "Community discussion post",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "authorId": { "type": "string", "maxLength": 128 },
+        "authorName": { "type": "string", "maxLength": 64 },
+        "category": { "type": "string", "enum": ["news", "walk_meet", "review", "qna", "daily", "tips"] },
+        "title": { "type": "string", "maxLength": 128 },
+        "content": { "type": "string", "maxLength": 5000 },
+        "photoUrl": { "type": "string", "maxLength": 2048 },
+        "likesCount": { "type": "number" },
+        "commentsCount": { "type": "number" },
+        "createdAt": { "type": "string", "maxLength": 64 },
+        "updatedAt": { "type": "string", "maxLength": 64 }
+      },
+      "required": ["authorId", "authorName", "category", "title", "content"]
+    },
+    "PostComment": {
+      "title": "PostComment",
+      "description": "Comment on a community post",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "postId": { "type": "string", "maxLength": 128 },
+        "authorId": { "type": "string", "maxLength": 128 },
+        "authorName": { "type": "string", "maxLength": 64 },
+        "content": { "type": "string", "maxLength": 1000 },
+        "createdAt": { "type": "string", "maxLength": 64 }
+      },
+      "required": ["postId", "authorId", "authorName", "content"]
+    },
+    "Place": {
+      "title": "Place",
+      "description": "Verified dog-friendly place, hospital, park, cafe",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "name": { "type": "string", "maxLength": 128 },
+        "category": { "type": "string", "enum": ["hospital_24h", "hospital_general", "hospital_night", "park", "cafe", "restaurant", "stay", "salon", "playground"] },
+        "city": { "type": "string", "maxLength": 64 },
+        "district": { "type": "string", "maxLength": 64 },
+        "address": { "type": "string", "maxLength": 256 },
+        "phone": { "type": "string", "maxLength": 64 },
+        "businessHours": { "type": "string", "maxLength": 128 },
+        "isEmergency": { "type": "boolean" },
+        "parkingAvailable": { "type": "boolean" },
+        "largeDogAllowed": { "type": "boolean" },
+        "description": { "type": "string", "maxLength": 1000 },
+        "dogPolicy": { "type": "string", "maxLength": 500 },
+        "photoUrl": { "type": "string", "maxLength": 2048 },
+        "verifiedAt": { "type": "string", "maxLength": 64 }
+      },
+      "required": ["name", "category", "city", "address"]
+    },
+    "PlaceReview": {
+      "title": "PlaceReview",
+      "description": "User review for a place",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "placeId": { "type": "string", "maxLength": 128 },
+        "userId": { "type": "string", "maxLength": 128 },
+        "userName": { "type": "string", "maxLength": 64 },
+        "rating": { "type": "number" },
+        "content": { "type": "string", "maxLength": 1500 },
+        "visitDate": { "type": "string", "maxLength": 32 },
+        "photoUrl": { "type": "string", "maxLength": 2048 },
+        "createdAt": { "type": "string", "maxLength": 64 }
+      },
+      "required": ["placeId", "userId", "userName", "rating", "content"]
+    },
+    "TravelChecklist": {
+      "title": "TravelChecklist",
+      "description": "Dog travel packing checklist",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "userId": { "type": "string", "maxLength": 128 },
+        "title": { "type": "string", "maxLength": 128 },
+        "destination": { "type": "string", "maxLength": 128 },
+        "items": { "type": "array" },
+        "createdAt": { "type": "string", "maxLength": 64 },
+        "updatedAt": { "type": "string", "maxLength": 64 }
+      },
+      "required": ["userId", "title"]
+    },
+    "Report": {
+      "title": "Report",
+      "description": "Content moderation report",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "reporterId": { "type": "string", "maxLength": 128 },
+        "targetType": { "type": "string", "enum": ["post", "comment", "missing", "place"] },
+        "targetId": { "type": "string", "maxLength": 128 },
+        "reason": { "type": "string", "maxLength": 500 },
+        "status": { "type": "string", "enum": ["pending", "reviewed", "dismissed"] },
+        "createdAt": { "type": "string", "maxLength": 64 }
+      },
+      "required": ["reporterId", "targetType", "targetId", "reason", "status"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": "UserProfile",
+      "description": "User profile information"
+    },
+    "/dogs/{dogId}": {
+      "schema": "Dog",
+      "description": "Dog profiles owned by users"
+    },
+    "/healthRecords/{recordId}": {
+      "schema": "HealthRecord",
+      "description": "Health notebook records for dogs"
+    },
+    "/walks/{walkId}": {
+      "schema": "WalkRecord",
+      "description": "Walk logs"
+    },
+    "/missingDogs/{missingDogId}": {
+      "schema": "MissingDog",
+      "description": "Missing dog alerts"
+    },
+    "/missingDogReports/{reportId}": {
+      "schema": "MissingDogReport",
+      "description": "Sighting tips for missing dogs"
+    },
+    "/communityPosts/{postId}": {
+      "schema": "CommunityPost",
+      "description": "Community posts"
+    },
+    "/comments/{commentId}": {
+      "schema": "PostComment",
+      "description": "Comments on community posts"
+    },
+    "/places/{placeId}": {
+      "schema": "Place",
+      "description": "Verified dog places and veterinary hospitals"
+    },
+    "/reviews/{reviewId}": {
+      "schema": "PlaceReview",
+      "description": "Reviews for places"
+    },
+    "/travelChecklists/{checklistId}": {
+      "schema": "TravelChecklist",
+      "description": "User travel packing checklists"
+    },
+    "/reports/{reportId}": {
+      "schema": "Report",
+      "description": "Abuse and moderation reports"
+    }
+  }
+}

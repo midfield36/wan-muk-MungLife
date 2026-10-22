@@ -1,0 +1,6 @@
+{
+  "name": "멍라이프 (MungLife)",
+  "description": "누구나 쉽고 편하게 쓰는 반려견 생활 필수 앱. 주변 장소 찾기, 긴급 도움, 건강수첩, 산책 기록, 커뮤니티를 제공합니다.",
+  "requestFramePermissions": ["geolocation"],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
