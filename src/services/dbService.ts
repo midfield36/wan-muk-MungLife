@@ -27,8 +27,10 @@ import {
   PlaceReview,
   TravelChecklist,
   ModerationReport,
+  TradeStatus,
 } from '../types';
 import { VERIFIED_PLACES } from '../data/verifiedPlaces';
+import { EMERGENCY_GUIDES } from '../data/emergencyGuides';
 
 // Seed sample dogs for first time or demo
 const SEED_DOGS: Dog[] = [
@@ -234,6 +236,64 @@ const SEED_POSTS: CommunityPost[] = [
     commentsCount: 9,
     likedBy: [],
     createdAt: new Date(Date.now() - 86400000 * 2).toISOString(),
+  },
+  {
+    id: 'post-004',
+    authorId: 'user-004',
+    authorName: '연남동포메',
+    authorPhoto: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&w=150&q=80',
+    category: 'used',
+    title: '[나눔] 소형견 하네스 & 3m 자동 리드줄 무료나눔합니다',
+    content: '아이가 금방 자라서 사이즈가 작아진 페스룸 하네스(S사이즈)와 3M 자동줄 무료나눔해요!\n세척 및 소독 완료했고 상태 매우 깨끗합니다. 연남동 동진시장 인근에서 직거래 원해요.',
+    photoUrl: 'https://images.unsplash.com/photo-1576201836106-db1758fd1c97?auto=format&fit=crop&w=600&q=80',
+    likesCount: 15,
+    commentsCount: 4,
+    likedBy: [],
+    tradeType: 'share',
+    price: 0,
+    itemCondition: 'like_new',
+    tradeStatus: 'trading',
+    neighborhood: '서울 마포구 연남동',
+    createdAt: new Date(Date.now() - 3600000 * 5).toISOString(),
+  },
+  {
+    id: 'post-005',
+    authorId: 'user-005',
+    authorName: '분당보호자',
+    authorPhoto: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=150&q=80',
+    category: 'used',
+    title: '[판매] 로얄캐닌 미니 인도어 어덜트 3kg 미개봉 새상품',
+    content: '사료 종류를 바꿔서 정품 미개봉 상태인 사료 1포 판매합니다.\n유통기한은 2026년 8월까지로 넉넉합니다. 정가 38,000원 -> 22,000원에 드립니다.',
+    photoUrl: 'https://images.unsplash.com/photo-1589924691995-400dc9ecc119?auto=format&fit=crop&w=600&q=80',
+    likesCount: 8,
+    commentsCount: 2,
+    likedBy: [],
+    tradeType: 'sell',
+    price: 22000,
+    itemCondition: 'new',
+    tradeStatus: 'trading',
+    neighborhood: '경기 성남시 분당구 정자동',
+    createdAt: new Date(Date.now() - 3600000 * 12).toISOString(),
+  },
+  {
+    id: 'post-006',
+    authorId: 'user-006',
+    authorName: '해피비숑',
+    authorPhoto: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=150&q=80',
+    category: 'care',
+    title: '🚨 [임시돌봄 SOS] 이번 주 금~일(2박 3일) 온순한 비숑 돌봄 부탁드립니다',
+    content: '급한 지방 출장으로 인해 3살 비숑(4.2kg, 중성화 완료, 짖음 전혀 없음) 2박 3일 임시 돌봄 부탁드립니다.\n평소 산책 잘하고 사람을 정말 좋아합니다. 사례비 12만원 또는 향후 품앗이 돌봄 가능합니다. 필요한 사료, 배변패드, 간식 모두 전달해 드려요.',
+    photoUrl: 'https://images.unsplash.com/photo-1587300003388-59208cc962cb?auto=format&fit=crop&w=600&q=80',
+    likesCount: 27,
+    commentsCount: 7,
+    likedBy: [],
+    careStartDate: '2025-04-11',
+    careEndDate: '2025-04-13',
+    careCompensation: '사례비 12만원 (또는 품앗이)',
+    isUrgentCare: true,
+    dogSize: '소형',
+    neighborhood: '서울 송파구 잠실동',
+    createdAt: new Date(Date.now() - 3600000 * 2).toISOString(),
   },
 ];
 
@@ -658,7 +718,7 @@ export async function savePost(post: Omit<CommunityPost, 'id' | 'createdAt' | 'l
   return full;
 }
 
-export async function updatePost(postId: string, updates: Partial<Pick<CommunityPost, 'title' | 'content' | 'category' | 'photoUrl'>>): Promise<void> {
+export async function updatePost(postId: string, updates: Partial<CommunityPost>): Promise<void> {
   try {
     await updateDoc(doc(db, 'communityPosts', postId), {
       ...updates,
@@ -672,6 +732,10 @@ export async function updatePost(postId: string, updates: Partial<Pick<Community
     'community_posts',
     current.map(p => (p.id === postId ? { ...p, ...updates, updatedAt: new Date().toISOString() } : p))
   );
+}
+
+export async function updatePostTradeStatus(postId: string, tradeStatus: TradeStatus): Promise<void> {
+  return updatePost(postId, { tradeStatus });
 }
 
 export async function deletePost(postId: string): Promise<void> {
@@ -920,3 +984,32 @@ export async function updateReportStatus(reportId: string, status: 'reviewed' | 
     current.map(r => (r.id === reportId ? { ...r, status } : r))
   );
 }
+
+/* ==============================================================
+   OFFLINE EMERGENCY HOSPITAL & FIRST AID CACHE
+============================================================== */
+export function initOfflineEmergencyCache(): void {
+  try {
+    const emergencyHospitals = VERIFIED_PLACES.filter(
+      p => p.category === 'hospital_24h' || p.isEmergency || p.nightCare
+    );
+    localStorage.setItem('munglife_offline_emergency_hospitals', JSON.stringify(emergencyHospitals));
+    localStorage.setItem('munglife_offline_emergency_guides', JSON.stringify(EMERGENCY_GUIDES));
+  } catch (e) {
+    console.warn('Failed to cache emergency data offline:', e);
+  }
+}
+
+export function getOfflineEmergencyHospitals(): Place[] {
+  try {
+    const val = localStorage.getItem('munglife_offline_emergency_hospitals');
+    if (val) return JSON.parse(val);
+  } catch (e) {
+    console.warn('Offline emergency hospitals load failed', e);
+  }
+  return VERIFIED_PLACES.filter(p => p.category === 'hospital_24h' || p.isEmergency || p.nightCare);
+}
+
+// Auto-run on load
+initOfflineEmergencyCache();
+

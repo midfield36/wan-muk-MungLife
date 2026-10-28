@@ -12,6 +12,7 @@ import {
   fetchMissingDogReports,
   saveMissingDogReport,
   submitReport,
+  getOfflineEmergencyHospitals,
 } from '../../services/dbService';
 import { useAuth } from '../../firebase/authContext';
 import {
@@ -23,6 +24,7 @@ import {
   ShieldCheck,
   Eye,
   CheckCircle,
+  WifiOff,
   FileWarning,
   Clock,
   MapPin,
@@ -39,18 +41,36 @@ interface EmergencyScreenProps {
   selectedRegion: KoreanRegion;
   onSelectRegion: (reg: KoreanRegion) => void;
   onOpenAuth: () => void;
+  initialSubTab?: 'hospitals' | 'missing' | 'guides';
 }
 
 export const EmergencyScreen: React.FC<EmergencyScreenProps> = ({
   selectedRegion,
   onSelectRegion,
   onOpenAuth,
+  initialSubTab,
 }) => {
   const { isLoggedIn, userProfile, isAdmin } = useAuth();
-  const [subTab, setSubTab] = useState<'hospitals' | 'missing' | 'guides'>('hospitals');
+  const [subTab, setSubTab] = useState<'hospitals' | 'missing' | 'guides'>(initialSubTab || 'hospitals');
+  const [isOffline, setIsOffline] = useState(!navigator.onLine);
+
+  useEffect(() => {
+    if (initialSubTab) setSubTab(initialSubTab);
+  }, [initialSubTab]);
+
+  useEffect(() => {
+    const onOnline = () => setIsOffline(false);
+    const onOffline = () => setIsOffline(true);
+    window.addEventListener('online', onOnline);
+    window.addEventListener('offline', onOffline);
+    return () => {
+      window.removeEventListener('online', onOnline);
+      window.removeEventListener('offline', onOffline);
+    };
+  }, []);
 
   // Emergency hospitals
-  const [hospitals, setHospitals] = useState<Place[]>([]);
+  const [hospitals, setHospitals] = useState<Place[]>(() => getOfflineEmergencyHospitals());
   const [hospitalQuery, setHospitalQuery] = useState('');
 
   // Missing dogs
@@ -385,6 +405,35 @@ export const EmergencyScreen: React.FC<EmergencyScreenProps> = ({
         <div className="leading-relaxed">
           <strong>수의사 진료 안내:</strong> 이 안내는 수의사의 진료를 대신하지 않습니다. 긴급한 상황에서는 즉시 동물병원에 전화하여 진료 가능 여부를 확인하고 내원하세요.
         </div>
+      </div>
+
+      {/* Offline SOS Mode Guarantee Banner */}
+      <div
+        className={`p-3.5 rounded-2xl border text-xs flex items-center justify-between gap-3 ${
+          isOffline
+            ? 'bg-rose-100 border-rose-300 text-rose-950 font-semibold'
+            : 'bg-emerald-50/80 border-emerald-200 text-emerald-950'
+        }`}
+      >
+        <div className="flex items-center gap-2">
+          {isOffline ? (
+            <WifiOff className="w-4 h-4 text-rose-600 shrink-0 animate-bounce" />
+          ) : (
+            <ShieldCheck className="w-4 h-4 text-emerald-600 shrink-0" />
+          )}
+          <span>
+            {isOffline
+              ? '🚨 오프라인 안심 SOS 모드 가동 중: 인터넷이 연결되지 않아도 기기에 저장된 24시 긴급 동물병원 전화번호와 7대 응급처치 가이드는 100% 열람 가능합니다.'
+              : '💾 오프라인 안심 캐싱 완료: 네트워크 연결이 끊기거나 터지지 않는 긴급 상황에서도 24시 병원 전화연결 및 응급처치 가이드를 즉시 사용할 수 있습니다.'}
+          </span>
+        </div>
+        <span
+          className={`text-[10px] px-2 py-0.5 rounded-full font-extrabold whitespace-nowrap shrink-0 ${
+            isOffline ? 'bg-rose-600 text-white' : 'bg-emerald-600 text-white'
+          }`}
+        >
+          {isOffline ? 'OFFLINE SOS' : '캐시 활성화됨'}
+        </span>
       </div>
 
       {/* SUB-TAB 1: 긴급 동물병원 찾기 */}

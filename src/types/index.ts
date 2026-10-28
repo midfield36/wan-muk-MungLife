@@ -155,10 +155,16 @@ export interface MissingDogReport {
 export type CommunityCategory =
   | 'news' // 동네 소식
   | 'walk_meet' // 산책 모임
+  | 'used' // 반려용품 중고거래 및 나눔
+  | 'care' // 동네 임시돌봄 및 산책 품앗이
   | 'review' // 장소 방문 후기
   | 'qna' // 반려견 질문
   | 'daily' // 반려견 일상
   | 'tips'; // 유용한 정보
+
+export type TradeType = 'sell' | 'share' | 'buy';
+export type TradeStatus = 'trading' | 'reserved' | 'completed';
+export type ItemCondition = 'new' | 'like_new' | 'used';
 
 export interface CommunityPost {
   id: string;
@@ -172,6 +178,18 @@ export interface CommunityPost {
   likesCount: number;
   commentsCount: number;
   likedBy?: string[];
+  // Secondhand trade & giveaway fields
+  tradeType?: TradeType;
+  price?: number;
+  itemCondition?: ItemCondition;
+  tradeStatus?: TradeStatus;
+  neighborhood?: string;
+  // Pet sitting / Care request fields
+  careStartDate?: string;
+  careEndDate?: string;
+  careCompensation?: string;
+  isUrgentCare?: boolean;
+  dogSize?: '소형' | '중형' | '대형';
   createdAt: string;
   updatedAt?: string;
 }
